@@ -128,18 +128,29 @@ CV=function(n,Z=10,seed=888){
   return(mm)}
 D=7;Z=10;n=nrow(data);mm=CV(n,Z)#用CV函数把数据下标随机分成10份，mm存储了10个下标集，D说明因变量是第7个变量
 
+library(e1071)
+library(rpart)
+library(randomForest)
 MSE=rep(0,Z)#建立一个向量存储结果
 set.seed(1111);for(i in 1:Z)#对每一组训练集和测试集做1次，共Z=10次
-{m=mm[[i]];M=mean((data[m,D]-mean(data[m,D]))^2)
-a=lm(hedge.ratio~.,data[-m,])#线性回归，这里[-m]为训练集下标集合
-MSE[i]=mean((data[m,D]-predict(a,data[m,]))^2)/M}#求测试集的NMSE
-mean(MSE)#测试集的NMSE
+m=mm[[i]];M=mean((data[m,D]-mean(data[m,D]))^2)
+# a=lm(hedge.ratio~Vehicle.brand+location+style+gear+time+kilometres+group2,data)#线性回归，这里[-m]为训练集下标集合
+# a=svm(hedge.ratio~Vehicle.brand+location+style+gear+time+kilometres+group2,data,type='eps-regression')# svm
+# a=rpart(hedge.ratio~Vehicle.brand+location+style+gear+time+kilometres+group2,data) # 回归树
+a=randomForest(hedge.ratio~Vehicle.brand+location+style+gear+time+kilometres+group2,data)
+summary(a)
+res= (data[D]-list(predict(a,data)))^2#求测试集的NMSE
+mse=sqrt(sum(res))/length(data)# mean(MSE)#测试集的NMSE
+
+
+
+
 
 #加入交互项模型的交叉验证
 MSE=rep(0,Z)
 set.seed(1111);for(i in 1:Z)
 {m=mm[[i]];M=mean((data[m,D]-mean(data[m,D]))^2)
-a=lm(hedge.ratio~Vehicle.brand+location+style+gear+time*kilometres+group2,data[-m,])
+# a=lm(hedge.ratio~Vehicle.brand+location+style+gear+time*kilometres+group2,data[-m,])
 MSE[i]=mean((data[m,D]-predict(a,data[m,]))^2)/M}
 mean(MSE)
 
@@ -160,3 +171,8 @@ for(i in 1){
 x_new=data[10,]
 x_new$hedge.ratio #实际值
 predict(data.lm,x_new)  #预测值
+
+
+m=c(0.375,0.339,0.330,0.209)
+
+barplot(m,main="不同回归方法的MSE柱状图",col=c("#ED1C24","#FF5000","#22B14C","#FFC90E"),names.arg=c("回归树","线性回归","svm","随机森林"),family='GB1')
